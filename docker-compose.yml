@@ -1,0 +1,151 @@
+name: telemetry
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: telemetry-mosquitto
+    restart: unless-stopped
+    ports:
+      - '${MOSQUITTO_PORT:-1883}:1883'
+      - '${MOSQUITTO_WS_PORT:-9001}:9001'
+    volumes:
+      - ./infrastructure/docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    healthcheck:
+      test: ['CMD-SHELL', 'mosquitto_pub -h localhost -p 1883 -t healthcheck -m ok -q 0 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - telemetry
+
+  timescaledb:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: telemetry-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-telemetry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telemetry_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-telemetry}
+    ports:
+      - '${TIMESCALE_PORT:-5432}:5432'
+    volumes:
+      - ./infrastructure/docker/timescaledb/init:/docker-entrypoint-initdb.d:ro
+      - timescaledb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - telemetry
+
+  redis:
+    image: redis:7-alpine
+    container_name: telemetry-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes', '--save', '60', '1']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - telemetry
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: telemetry-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-telemetry}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-telemetry_dev_password}
+    ports:
+      - '${RABBITMQ_PORT:-5672}:5672'
+      - '${RABBITMQ_MGMT_PORT:-15672}:15672'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - telemetry
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: telemetry-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    ports:
+      - '${PROMETHEUS_PORT:-9090}:9090'
+    volumes:
+      - ./infrastructure/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:9090/-/healthy || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - telemetry
+
+  grafana:
+    image: grafana/grafana-oss:11.3.1
+    container_name: telemetry-grafana
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_USERS_DEFAULT_TIMEZONE: Europe/Istanbul
+      POSTGRES_USER: ${POSTGRES_USER:-telemetry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telemetry_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-telemetry}
+    ports:
+      - '${GRAFANA_PORT:-3000}:3000'
+    volumes:
+      - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:3000/api/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - telemetry
+
+networks:
+  telemetry:
+    driver: bridge
+
+volumes:
+  mosquitto-data:
+  timescaledb-data:
+  redis-data:
+  rabbitmq-data:
+  prometheus-data:
+  grafana-data:

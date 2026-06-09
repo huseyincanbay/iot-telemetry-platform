@@ -1,0 +1,40 @@
+{
+  "name": "iot-telemetry-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hostable IoT telemetry platform built with NestJS microservices, MQTT, TimescaleDB, and Grafana.",
+  "license": "MIT",
+  "author": "Hüseyin Canbay <huseyincanbay10@gmail.com>",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:packages": "pnpm -r --filter \"./packages/*\" build",
+    "dev:ingestion": "pnpm --filter @telemetry/ingestion-service start:dev",
+    "dev:rules": "pnpm --filter @telemetry/rule-engine start:dev",
+    "dev:notify": "pnpm --filter @telemetry/notification-service start:dev",
+    "dev:query": "pnpm --filter @telemetry/query-api start:dev",
+    "dev:all": "pnpm --parallel -r --filter \"./apps/*\" start:dev",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v",
+    "infra:logs": "docker compose logs -f",
+    "infra:ps": "docker compose ps"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.0"
+  }
+}
