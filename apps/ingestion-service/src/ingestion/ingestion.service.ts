@@ -3,13 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { DeviceEntity, TelemetryEntity } from '@telemetry/database';
 import type { Telemetry } from '@telemetry/types';
-
-interface DeviceState {
-  deviceId: string;
-  lastSeen: Date;
-  lastLat: number;
-  lastLon: number;
-}
+import { DeviceShadowService } from './device-shadow.service';
 
 @Injectable()
 export class IngestionService implements OnModuleInit, OnApplicationShutdown {
@@ -23,6 +17,7 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
   constructor(
     config: ConfigService,
     private readonly dataSource: DataSource,
+    private readonly deviceShadow: DeviceShadowService,
   ) {
     this.batchSize = config.get<number>('INGEST_BATCH_SIZE') ?? 100;
     this.intervalMs = config.get<number>('INGEST_BATCH_INTERVAL_MS') ?? 500;
@@ -66,19 +61,14 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
       lon: item.lon,
     }));
 
-    const latestByDevice = new Map<string, DeviceState>();
+    const latestByDevice = new Map<string, Telemetry>();
     for (const item of batch) {
-      const seenAt = new Date(item.timestamp);
       const existing = latestByDevice.get(item.device_id);
-      if (!existing || seenAt > existing.lastSeen) {
-        latestByDevice.set(item.device_id, {
-          deviceId: item.device_id,
-          lastSeen: seenAt,
-          lastLat: item.lat,
-          lastLon: item.lon,
-        });
+      if (!existing || new Date(item.timestamp) > new Date(existing.timestamp)) {
+        latestByDevice.set(item.device_id, item);
       }
     }
+    const latest = [...latestByDevice.values()];
 
     await this.dataSource.transaction(async (manager) => {
       await manager.insert(TelemetryEntity, readings);
@@ -86,10 +76,19 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
         .createQueryBuilder()
         .insert()
         .into(DeviceEntity)
-        .values([...latestByDevice.values()])
+        .values(
+          latest.map((item) => ({
+            deviceId: item.device_id,
+            lastSeen: new Date(item.timestamp),
+            lastLat: item.lat,
+            lastLon: item.lon,
+          })),
+        )
         .orUpdate(['last_seen', 'last_lat', 'last_lon'], ['device_id'])
         .execute();
     });
+
+    void this.deviceShadow.update(latest);
   }
 
   async onApplicationShutdown(): Promise<void> {

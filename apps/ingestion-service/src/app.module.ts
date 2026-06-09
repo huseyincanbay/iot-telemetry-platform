@@ -7,6 +7,7 @@ import { SERVICE_NAME } from './app.constants';
 import { envSchema } from './config/env.schema';
 import { HealthModule } from './health/health.module';
 import { IngestionModule } from './ingestion/ingestion.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { IngestionModule } from './ingestion/ingestion.module';
     }),
     LoggerModule.forRoot(pinoOptions({ serviceName: SERVICE_NAME })),
     DatabaseModule.forRoot(),
+    RedisModule,
     IngestionModule,
     HealthModule,
   ],
