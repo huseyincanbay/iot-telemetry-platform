@@ -6,6 +6,8 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(DEFAULT_PORT),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
   METRICS_TOKEN: z.string().min(16).optional(),
+  DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof envSchema>;

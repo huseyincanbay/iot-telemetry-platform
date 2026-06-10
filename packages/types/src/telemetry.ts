@@ -11,6 +11,10 @@ export function parseDeviceIdFromTopic(topic: string): string | null {
   return match ? match[1] : null;
 }
 
+export function deviceShadowKey(deviceId: string): string {
+  return `device:${deviceId}:last`;
+}
+
 export const TelemetrySchema = z.object({
   device_id: z.string().min(1).max(64),
   timestamp: z.string().datetime({ offset: true }),

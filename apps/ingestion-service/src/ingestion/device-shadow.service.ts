@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '@telemetry/common';
-import type { Telemetry } from '@telemetry/types';
+import { deviceShadowKey, type Telemetry } from '@telemetry/types';
 
 @Injectable()
 export class DeviceShadowService {
@@ -15,7 +15,7 @@ export class DeviceShadowService {
     try {
       const pipeline = this.redis.client.pipeline();
       for (const reading of readings) {
-        pipeline.set(`device:${reading.device_id}:last`, JSON.stringify(reading));
+        pipeline.set(deviceShadowKey(reading.device_id), JSON.stringify(reading));
       }
       await pipeline.exec();
     } catch (error) {
