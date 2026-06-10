@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package telemetry;
+
+service DeviceService {
+  rpc ListDevices(Empty) returns (DeviceList);
+  rpc GetDevice(DeviceRequest) returns (Device);
+  rpc GetSeries(SeriesRequest) returns (Series);
+}
+
+message Empty {}
+
+message DeviceRequest {
+  string device_id = 1;
+}
+
+message Telemetry {
+  string device_id = 1;
+  string timestamp = 2;
+  double temp = 3;
+  double humidity = 4;
+  double battery = 5;
+  double lat = 6;
+  double lon = 7;
+}
+
+message Device {
+  string device_id = 1;
+  string first_seen = 2;
+  string last_seen = 3;
+  string status = 4;
+  Telemetry last = 5;
+}
+
+message DeviceList {
+  repeated Device devices = 1;
+}
+
+message SeriesRequest {
+  string device_id = 1;
+  string metric = 2;
+  string resolution = 3;
+  string from = 4;
+  string to = 5;
+}
+
+message SeriesPoint {
+  string time = 1;
+  double avg = 2;
+  double min = 3;
+  double max = 4;
+}
+
+message Series {
+  string device_id = 1;
+  string metric = 2;
+  string resolution = 3;
+  string from = 4;
+  string to = 5;
+  repeated SeriesPoint points = 6;
+}

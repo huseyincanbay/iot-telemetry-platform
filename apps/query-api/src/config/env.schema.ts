@@ -8,6 +8,7 @@ export const envSchema = z.object({
   METRICS_TOKEN: z.string().min(16).optional(),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
+  GRPC_URL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
