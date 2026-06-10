@@ -5,3 +5,5 @@ export * from './interceptors/http-metrics.interceptor';
 export * from './config/assert-prod-secret';
 export * from './config/validate-env';
 export * from './util/token-hash';
+export * from './redis/redis.service';
+export * from './redis/redis.module';

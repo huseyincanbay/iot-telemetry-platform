@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { RedisService } from '@telemetry/common';
 import type { Telemetry } from '@telemetry/types';
-import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class DeviceShadowService {
