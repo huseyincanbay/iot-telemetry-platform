@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
-import { pinoOptions, RedisModule, validateEnv } from '@telemetry/common';
+import { pinoOptions, RabbitMqModule, RedisModule, validateEnv } from '@telemetry/common';
 import { DatabaseModule } from '@telemetry/database';
 import { SERVICE_NAME } from './app.constants';
 import { envSchema } from './config/env.schema';
@@ -18,6 +18,7 @@ import { IngestionModule } from './ingestion/ingestion.module';
     LoggerModule.forRoot(pinoOptions({ serviceName: SERVICE_NAME })),
     DatabaseModule.forRoot(),
     RedisModule,
+    RabbitMqModule,
     IngestionModule,
     HealthModule,
   ],

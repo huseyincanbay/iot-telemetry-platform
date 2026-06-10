@@ -1,8 +1,9 @@
 import { Injectable, Logger, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
+import { RabbitMqService } from '@telemetry/common';
 import { DeviceEntity, TelemetryEntity } from '@telemetry/database';
-import type { Telemetry } from '@telemetry/types';
+import { RoutingKey, type Telemetry, type TelemetryReceivedEvent } from '@telemetry/types';
 import { DeviceShadowService } from './device-shadow.service';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
     config: ConfigService,
     private readonly dataSource: DataSource,
     private readonly deviceShadow: DeviceShadowService,
+    private readonly rabbit: RabbitMqService,
   ) {
     this.batchSize = config.get<number>('INGEST_BATCH_SIZE') ?? 100;
     this.intervalMs = config.get<number>('INGEST_BATCH_INTERVAL_MS') ?? 500;
@@ -88,7 +90,20 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
         .execute();
     });
 
+    this.publishTelemetryReceived(batch);
     void this.deviceShadow.update(latest);
+  }
+
+  private publishTelemetryReceived(batch: Telemetry[]): void {
+    const ingestedAt = new Date().toISOString();
+    try {
+      for (const telemetry of batch) {
+        const event: TelemetryReceivedEvent = { telemetry, ingestedAt };
+        this.rabbit.publish(RoutingKey.TelemetryReceived, event);
+      }
+    } catch (error) {
+      this.logger.warn(`failed to publish telemetry events: ${(error as Error).message}`);
+    }
   }
 
   async onApplicationShutdown(): Promise<void> {

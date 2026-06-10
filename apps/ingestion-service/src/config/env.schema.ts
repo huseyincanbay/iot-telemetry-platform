@@ -9,6 +9,7 @@ export const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   MQTT_URL: z.string().url(),
   REDIS_URL: z.string().url(),
+  RABBITMQ_URL: z.string().url(),
   INGEST_BATCH_SIZE: z.coerce.number().int().positive().default(100),
   INGEST_BATCH_INTERVAL_MS: z.coerce.number().int().positive().default(500),
 });
