@@ -1,10 +1,11 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { AlertEntity } from './entities/alert.entity';
 import { DeviceEntity } from './entities/device.entity';
 import { TelemetryEntity } from './entities/telemetry.entity';
 
-const ENTITIES = [TelemetryEntity, DeviceEntity];
+const ENTITIES = [TelemetryEntity, DeviceEntity, AlertEntity];
 
 @Module({})
 export class DatabaseModule {

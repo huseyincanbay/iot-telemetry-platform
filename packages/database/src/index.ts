@@ -1,3 +1,4 @@
+export * from './entities/alert.entity';
 export * from './entities/device.entity';
 export * from './entities/telemetry.entity';
 export * from './database.module';
