@@ -7,3 +7,5 @@ export * from './config/validate-env';
 export * from './util/token-hash';
 export * from './redis/redis.service';
 export * from './redis/redis.module';
+export * from './messaging/rabbitmq.service';
+export * from './messaging/rabbitmq.module';
