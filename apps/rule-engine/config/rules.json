@@ -1,0 +1,30 @@
+[
+  {
+    "id": "temp-critical",
+    "metric": "temp",
+    "operator": "gt",
+    "threshold": 80,
+    "sustainSeconds": 300,
+    "severity": "CRITICAL",
+    "message": "temperature above 80C sustained for 5m"
+  },
+  {
+    "id": "battery-low",
+    "metric": "battery",
+    "operator": "lt",
+    "threshold": 20,
+    "sustainSeconds": 0,
+    "severity": "WARNING",
+    "message": "battery below 20%"
+  },
+  {
+    "id": "humidity-out-of-range",
+    "metric": "humidity",
+    "operator": "outside",
+    "min": 30,
+    "max": 70,
+    "sustainSeconds": 600,
+    "severity": "WARNING",
+    "message": "humidity outside 30-70% sustained for 10m"
+  }
+]
