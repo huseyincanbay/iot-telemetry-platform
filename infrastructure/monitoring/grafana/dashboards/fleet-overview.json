@@ -1,0 +1,82 @@
+{
+  "uid": "fleet-overview",
+  "title": "Fleet Overview",
+  "tags": ["telemetry"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Devices",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT count(*) AS value FROM devices;" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Online (<60s)",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT count(*) AS value FROM devices WHERE last_seen > now() - interval '60 seconds';" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Offline",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT count(*) AS value FROM devices WHERE last_seen <= now() - interval '60 seconds';" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } }, "overrides": [] }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Ingestion rate (readings/s)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "telemetry-prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(rate(telemetry_ingested_total[1m]))", "legendFormat": "ingested/s" }],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 15 } }, "overrides": [] }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Alerts triggered by severity (rate)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "telemetry-prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum by (severity) (rate(telemetry_alerts_triggered_total[5m]))", "legendFormat": "{{severity}}" }],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 60 } }, "overrides": [] }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Recent alerts",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT triggered_at, device_id, rule_id, severity, value FROM alerts ORDER BY triggered_at DESC LIMIT 50;" }]
+    },
+    {
+      "id": 7,
+      "type": "geomap",
+      "title": "Device map",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT device_id, last_lat AS latitude, last_lon AS longitude FROM devices WHERE last_lat IS NOT NULL;" }],
+      "options": {
+        "view": { "id": "coords", "lat": 41, "lon": 29, "zoom": 6 },
+        "basemap": { "type": "default", "name": "Basemap" },
+        "layers": [{ "type": "markers", "name": "Devices", "location": { "mode": "auto" } }]
+      }
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "uid": "device-detail",
+  "title": "Device Detail",
+  "tags": ["telemetry"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "annotations": { "list": [] },
+  "templating": {
+    "list": [
+      {
+        "name": "device",
+        "type": "query",
+        "label": "Device",
+        "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+        "query": "SELECT device_id FROM devices ORDER BY device_id;",
+        "refresh": 1,
+        "sort": 1,
+        "includeAll": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Temperature (C)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT time AS \"time\", temp AS \"temp\" FROM telemetry WHERE device_id = '$device' AND $__timeFilter(time) ORDER BY time;" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Humidity (%)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT time AS \"time\", humidity AS \"humidity\" FROM telemetry WHERE device_id = '$device' AND $__timeFilter(time) ORDER BY time;" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Battery (%)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT time AS \"time\", battery AS \"battery\" FROM telemetry WHERE device_id = '$device' AND $__timeFilter(time) ORDER BY time;" }]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Alerts",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "telemetry-timescaledb" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT triggered_at, rule_id, severity, value, threshold FROM alerts WHERE device_id = '$device' ORDER BY triggered_at DESC LIMIT 50;" }]
+    }
+  ]
+}
