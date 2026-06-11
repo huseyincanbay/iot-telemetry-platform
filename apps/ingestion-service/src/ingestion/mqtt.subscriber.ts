@@ -2,6 +2,7 @@ import { Injectable, Logger, OnApplicationShutdown, OnModuleInit } from '@nestjs
 import { ConfigService } from '@nestjs/config';
 import { connect, MqttClient } from 'mqtt';
 import { parseDeviceIdFromTopic, TelemetrySchema, TELEMETRY_TOPIC_PATTERN } from '@telemetry/types';
+import { IngestionMetrics } from './ingestion.metrics';
 import { IngestionService } from './ingestion.service';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class MqttSubscriber implements OnModuleInit, OnApplicationShutdown {
   constructor(
     private readonly config: ConfigService,
     private readonly ingestion: IngestionService,
+    private readonly metrics: IngestionMetrics,
   ) {}
 
   onModuleInit(): void {
@@ -40,6 +42,7 @@ export class MqttSubscriber implements OnModuleInit, OnApplicationShutdown {
   private handleMessage(topic: string, payload: Buffer): void {
     const deviceId = parseDeviceIdFromTopic(topic);
     if (!deviceId) {
+      this.metrics.recordDropped('bad_topic');
       return;
     }
 
@@ -47,17 +50,20 @@ export class MqttSubscriber implements OnModuleInit, OnApplicationShutdown {
     try {
       raw = JSON.parse(payload.toString());
     } catch {
+      this.metrics.recordDropped('invalid_json');
       this.logger.warn(`dropped non-JSON payload on ${topic}`);
       return;
     }
 
     const parsed = TelemetrySchema.safeParse(raw);
     if (!parsed.success) {
+      this.metrics.recordDropped('invalid_schema');
       this.logger.warn(`dropped invalid telemetry on ${topic}`);
       return;
     }
 
     if (parsed.data.device_id !== deviceId) {
+      this.metrics.recordDropped('device_mismatch');
       this.logger.warn(`dropped telemetry with topic/device mismatch on ${topic}`);
       return;
     }

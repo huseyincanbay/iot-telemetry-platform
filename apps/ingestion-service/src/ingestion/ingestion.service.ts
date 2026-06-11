@@ -5,6 +5,7 @@ import { RabbitMqService } from '@telemetry/common';
 import { DeviceEntity, TelemetryEntity } from '@telemetry/database';
 import { RoutingKey, type Telemetry, type TelemetryReceivedEvent } from '@telemetry/types';
 import { DeviceShadowService } from './device-shadow.service';
+import { IngestionMetrics } from './ingestion.metrics';
 
 @Injectable()
 export class IngestionService implements OnModuleInit, OnApplicationShutdown {
@@ -20,6 +21,7 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
     private readonly dataSource: DataSource,
     private readonly deviceShadow: DeviceShadowService,
     private readonly rabbit: RabbitMqService,
+    private readonly metrics: IngestionMetrics,
   ) {
     this.batchSize = config.get<number>('INGEST_BATCH_SIZE') ?? 100;
     this.intervalMs = config.get<number>('INGEST_BATCH_INTERVAL_MS') ?? 500;
@@ -91,6 +93,7 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
     });
 
     this.publishTelemetryReceived(batch);
+    this.recordMetrics(batch);
     void this.deviceShadow.update(latest);
   }
 
@@ -103,6 +106,14 @@ export class IngestionService implements OnModuleInit, OnApplicationShutdown {
       }
     } catch (error) {
       this.logger.warn(`failed to publish telemetry events: ${(error as Error).message}`);
+    }
+  }
+
+  private recordMetrics(batch: Telemetry[]): void {
+    const now = Date.now();
+    for (const reading of batch) {
+      const lagSeconds = Math.max(0, (now - new Date(reading.timestamp).getTime()) / 1000);
+      this.metrics.recordIngested(reading.device_id, lagSeconds);
     }
   }
 
