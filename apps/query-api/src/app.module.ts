@@ -5,6 +5,7 @@ import { pinoOptions, RedisModule, validateEnv } from '@telemetry/common';
 import { DatabaseModule } from '@telemetry/database';
 import { SERVICE_NAME } from './app.constants';
 import { envSchema } from './config/env.schema';
+import { AlertsModule } from './alerts/alerts.module';
 import { DevicesModule } from './devices/devices.module';
 import { HealthModule } from './health/health.module';
 
@@ -18,6 +19,7 @@ import { HealthModule } from './health/health.module';
     LoggerModule.forRoot(pinoOptions({ serviceName: SERVICE_NAME })),
     DatabaseModule.forRoot(),
     RedisModule,
+    AlertsModule,
     DevicesModule,
     HealthModule,
   ],
