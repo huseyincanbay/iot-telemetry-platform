@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
-import { pinoOptions, RabbitMqModule, RedisModule, validateEnv } from '@telemetry/common';
+import { MetricsModule, pinoOptions, RabbitMqModule, RedisModule, validateEnv } from '@telemetry/common';
 import { SERVICE_NAME } from './app.constants';
 import { envSchema } from './config/env.schema';
 import { HealthModule } from './health/health.module';
@@ -15,6 +15,7 @@ import { RuleEngineModule } from './rules/rule-engine.module';
       validate: validateEnv(envSchema),
     }),
     LoggerModule.forRoot(pinoOptions({ serviceName: SERVICE_NAME })),
+    MetricsModule,
     RedisModule,
     RabbitMqModule,
     RuleEngineModule,

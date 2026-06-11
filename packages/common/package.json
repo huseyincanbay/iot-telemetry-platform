@@ -20,6 +20,7 @@
   "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
+    "@nestjs/core": "^11.0.0",
     "express": "^5.0.0",
     "nestjs-pino": "^4.1.0",
     "prom-client": "^15.1.0",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
+    "@nestjs/core": "^11.0.0",
     "@types/amqplib": "^0.10.5",
     "@types/express": "^5.0.0",
     "express": "^5.0.0",
