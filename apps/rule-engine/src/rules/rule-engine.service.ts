@@ -11,6 +11,7 @@ import {
   type TelemetryReceivedEvent,
 } from '@telemetry/types';
 import { evaluateRule, type Rule, RulesSchema } from './rule.schema';
+import { RuleEngineMetrics } from './rule-engine.metrics';
 
 interface BreachState {
   breachStartMs: number;
@@ -26,6 +27,7 @@ export class RuleEngineService implements OnModuleInit {
     private readonly config: ConfigService,
     private readonly rabbit: RabbitMqService,
     private readonly redis: RedisService,
+    private readonly metrics: RuleEngineMetrics,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -50,6 +52,7 @@ export class RuleEngineService implements OnModuleInit {
   }
 
   private async evaluate(rule: Rule, telemetry: Telemetry): Promise<void> {
+    this.metrics.recordEvaluation(rule.id);
     const value = telemetry[rule.metric];
     const { breaching, threshold } = evaluateRule(rule, value);
     const key = `rule:${rule.id}:${telemetry.device_id}`;
@@ -84,6 +87,7 @@ export class RuleEngineService implements OnModuleInit {
       triggeredAt: telemetry.timestamp,
     };
     this.rabbit.publish(RoutingKey.AlertTriggered, alert);
+    this.metrics.recordAlert(rule.id, rule.severity);
     this.logger.warn(`alert '${rule.id}' (${rule.severity}) for ${telemetry.device_id}: ${rule.metric}=${value}`);
   }
 }
