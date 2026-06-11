@@ -43,6 +43,7 @@ export class RabbitMqService implements OnModuleInit, OnApplicationShutdown {
     await this.channel.bindQueue(queue, TELEMETRY_EXCHANGE, routingKey);
     await this.channel.assertQueue(deadLetterQueue, { durable: true });
     await this.channel.bindQueue(deadLetterQueue, TELEMETRY_DLX, routingKey);
+    await this.channel.prefetch(1);
 
     await this.channel.consume(queue, (message) => {
       if (message) {
