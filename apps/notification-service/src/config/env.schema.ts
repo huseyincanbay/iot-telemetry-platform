@@ -6,6 +6,9 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(DEFAULT_PORT),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
   METRICS_TOKEN: z.string().min(16).optional(),
+  DATABASE_URL: z.string().url(),
+  RABBITMQ_URL: z.string().url(),
+  WEBHOOK_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
