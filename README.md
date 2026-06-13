@@ -67,6 +67,7 @@ flowchart LR
   ING -->|telemetry.received| MQ
   MQ -->|rule-engine.telemetry| RULE
   RULE <-->|breach state| RD
+  RULE -.->|offline sweep| TS
   RULE -->|alert.triggered| MQ
   MQ -->|notification.alerts| NOTIF
   NOTIF -->|persist alert| TS
@@ -98,7 +99,7 @@ Each technology has a specific role in the platform:
 - **Real-time MQTT ingestion** with a Zod-validated wire contract, batched transactional writes, and automatic device registration on first contact.
 - **Time-series storage** on TimescaleDB hypertables, with `1m` / `1h` continuous aggregates and tiered retention (raw 24h, 1-minute 7d, 1-hour indefinitely).
 - **Redis device shadows** — the last reading per device, available in sub-millisecond time.
-- **Event-driven alerting** — declarative JSON rules supporting threshold and sustained-breach conditions, firing once per breach episode.
+- **Event-driven alerting** — declarative JSON rules (threshold, sustained-breach, and offline detection), firing once per episode.
 - **Dead-letter handling** on every queue, so a poison message is quarantined rather than lost.
 - **REST + gRPC query API** over the same data.
 - **Observability** — every service exposes `/metrics`, scraped by Prometheus and visualized in provisioned Grafana dashboards.
@@ -164,15 +165,16 @@ Prometheus scrapes all four services (every target healthy), and each service ex
 
 ## Alerting rules
 
-Rules are plain JSON (`apps/rule-engine/config/rules.json`), validated with Zod and hot-loaded at startup. Each rule combines a threshold operator with an optional sustain window, so transient spikes don't page anyone.
+Rules are plain JSON (`apps/rule-engine/config/rules.json`), validated with Zod and hot-loaded at startup. Two kinds are supported: **threshold** rules, evaluated on each reading with an optional sustain window so transient spikes don't page anyone, and a **connectivity** rule, evaluated by a periodic sweep that flags devices which have gone silent.
 
-| Rule | Metric | Condition | Sustain | Severity |
+| Rule | Kind | Condition | Sustain / silence | Severity |
 |---|---|---|---|---|
-| `temp-critical` | `temp` | `> 80 °C` | 5 minutes | **CRITICAL** |
-| `battery-low` | `battery` | `< 20 %` | immediate | **WARNING** |
-| `humidity-out-of-range` | `humidity` | outside `30–70 %` | 10 minutes | **WARNING** |
+| `temp-critical` | threshold | `temp > 80 °C` | 5 minutes | **CRITICAL** |
+| `battery-low` | threshold | `battery < 20 %` | immediate | **WARNING** |
+| `humidity-out-of-range` | threshold | `humidity` outside `30–70 %` | 10 minutes | **WARNING** |
+| `device-offline` | connectivity | no telemetry received | 60 seconds | **WARNING** |
 
-Supported operators: `gt`, `gte`, `lt`, `lte`, `outside`, `inside`. Sustained breaches are tracked per device-and-rule in Redis and fire exactly once per episode.
+Threshold operators: `gt`, `gte`, `lt`, `lte`, `outside`, `inside`. Both sustained breaches and offline episodes are tracked per device-and-rule in Redis and fire exactly once per episode; the rule engine sweeps the device registry every 30 seconds to catch silent devices.
 
 ## API
 

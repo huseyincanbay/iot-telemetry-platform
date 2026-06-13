@@ -8,6 +8,7 @@ export const envSchema = z.object({
   METRICS_TOKEN: z.string().min(16).optional(),
   REDIS_URL: z.string().url(),
   RABBITMQ_URL: z.string().url(),
+  DATABASE_URL: z.string().url(),
   RULES_PATH: z.string().optional(),
 });
 

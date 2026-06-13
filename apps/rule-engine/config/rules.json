@@ -1,5 +1,6 @@
 [
   {
+    "kind": "threshold",
     "id": "temp-critical",
     "metric": "temp",
     "operator": "gt",
@@ -9,6 +10,7 @@
     "message": "temperature above 80C sustained for 5m"
   },
   {
+    "kind": "threshold",
     "id": "battery-low",
     "metric": "battery",
     "operator": "lt",
@@ -18,6 +20,7 @@
     "message": "battery below 20%"
   },
   {
+    "kind": "threshold",
     "id": "humidity-out-of-range",
     "metric": "humidity",
     "operator": "outside",
@@ -26,5 +29,12 @@
     "sustainSeconds": 600,
     "severity": "WARNING",
     "message": "humidity outside 30-70% sustained for 10m"
+  },
+  {
+    "kind": "connectivity",
+    "id": "device-offline",
+    "silenceSeconds": 60,
+    "severity": "WARNING",
+    "message": "no telemetry received for 60s"
   }
 ]
