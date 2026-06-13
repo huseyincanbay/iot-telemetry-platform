@@ -24,6 +24,7 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --parallel typecheck",
     "infra:up": "docker compose up -d",
+    "up:all": "docker compose --profile full up -d --build",
     "infra:down": "docker compose down",
     "infra:reset": "docker compose down -v",
     "infra:logs": "docker compose logs -f",

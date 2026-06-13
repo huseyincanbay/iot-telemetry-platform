@@ -247,6 +247,16 @@ pnpm sim
 
 Within a few seconds the dashboards start filling in. The simulator includes one device that goes offline and one that drives a temperature spike, so you'll see both an `OFFLINE` device and a live `CRITICAL` alert.
 
+### Everything in containers
+
+To run the full stack — infrastructure **and** all four services — in Docker:
+
+```bash
+pnpm up:all   # docker compose --profile full up -d --build
+```
+
+This builds a slim multi-stage image per service (≈350 MB) from a single parameterized `Dockerfile` and wires everything together on one network. The default `pnpm infra:up` above instead runs only the infrastructure and leaves the services to `pnpm dev:all` on the host — the better loop for active development. Either way, tear down with `pnpm infra:down`.
+
 > **Note:** TimescaleDB is published on host port **5433** (not the default 5432) to avoid colliding with a local PostgreSQL, and services connect over `127.0.0.1`. Both are already set in `.env.example`.
 
 ### Access
