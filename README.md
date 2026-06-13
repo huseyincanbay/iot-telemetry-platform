@@ -1,6 +1,6 @@
 # IoT Telemetry Platform
 
-> A self-hostable, event-driven IoT telemetry platform — ingest, store, evaluate, alert, and visualize device data in real time. Built as a backend systems showcase spanning **9 production technologies**, and designed to run **100% locally and free** via a single `docker compose up`.
+> An event-driven IoT telemetry platform — ingest, store, evaluate, alert, and visualize device data in real time. Built on NestJS microservices with MQTT, TimescaleDB, RabbitMQ, and Grafana.
 
 <p align="center">
   <img alt="NestJS"      src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white">
@@ -20,7 +20,7 @@
   <img alt="Fleet Overview dashboard" src="docs/images/grafana-fleet-overview.png" width="900">
 </p>
 
-A simulated fleet of devices streams telemetry over MQTT. The platform ingests it, persists time-series data, evaluates declarative alerting rules through an event-driven pipeline, and surfaces everything on live Grafana dashboards — while every service exposes Prometheus metrics for end-to-end observability.
+A simulated fleet of devices streams telemetry over MQTT. The platform ingests it, persists time-series data, evaluates declarative alerting rules through an event-driven pipeline, and surfaces everything on live Grafana dashboards — while every service exposes Prometheus metrics for observability.
 
 ---
 
@@ -45,7 +45,7 @@ A simulated fleet of devices streams telemetry over MQTT. The platform ingests i
 
 ## Architecture
 
-The platform is a small constellation of single-responsibility NestJS services wired together by an MQTT broker and a RabbitMQ event backbone. Data fans out to a time-series store (TimescaleDB) and a fast key-value store (Redis); a read-only Query API serves it over REST and gRPC; Prometheus and Grafana close the observability loop.
+The platform is four single-responsibility NestJS services wired together by an MQTT broker and a RabbitMQ event backbone. Data fans out to a time-series store (TimescaleDB) and a fast key-value store (Redis); a read-only Query API serves it over REST and gRPC; Prometheus and Grafana close the observability loop.
 
 ```mermaid
 flowchart LR
@@ -75,15 +75,15 @@ flowchart LR
   GRAF --> PROM & TS
 ```
 
-**Flow in one breath:** a device publishes a reading → Mosquitto → Ingestion validates and batch-writes it to TimescaleDB, caches the latest reading in Redis, and emits `telemetry.received` → the Rule Engine evaluates declarative rules (tracking sustained breaches in Redis) and emits `alert.triggered` → the Notification Service persists the alert and fires a webhook mock → the Query API and Grafana read it all back.
+**The full flow:** a device publishes a reading → Mosquitto → Ingestion validates and batch-writes it to TimescaleDB, caches the latest reading in Redis, and emits `telemetry.received` → the Rule Engine evaluates declarative rules (tracking sustained breaches in Redis) and emits `alert.triggered` → the Notification Service persists the alert and fires a webhook mock → the Query API and Grafana read it all back.
 
 ## Tech stack
 
-Nine technologies, each chosen for a specific job rather than for its own sake.
+Each technology has a specific role in the platform:
 
 | Technology | Role in the platform | Why it's here |
 |---|---|---|
-| **NestJS + TypeScript** | 4 microservices | Modular DI and an opinionated structure that scales to multiple services; first-class TypeScript end to end. |
+| **NestJS + TypeScript** | 4 microservices | Modular DI and an opinionated structure that scales across services; TypeScript throughout. |
 | **Mosquitto (MQTT)** | Device ingress | The de-facto lightweight pub/sub protocol for constrained IoT devices. |
 | **TimescaleDB** | Time-series storage | PostgreSQL plus hypertables, continuous aggregates, and retention policies — purpose-built for telemetry. |
 | **Redis** | Device shadows + breach state | Sub-millisecond last-known device state and the sliding windows that sustained-breach rules depend on. |
@@ -101,7 +101,7 @@ Nine technologies, each chosen for a specific job rather than for its own sake.
 - **Event-driven alerting** — declarative JSON rules supporting threshold and sustained-breach conditions, firing once per breach episode.
 - **Dead-letter handling** on every queue, so a poison message is quarantined rather than lost.
 - **REST + gRPC query API** over the same data.
-- **First-class observability** — every service exposes `/metrics`, scraped by Prometheus and visualized in provisioned Grafana dashboards.
+- **Observability** — every service exposes `/metrics`, scraped by Prometheus and visualized in provisioned Grafana dashboards.
 - **Graceful shutdown** — in-flight batches are flushed on `SIGTERM`.
 
 ## Visual tour
@@ -243,7 +243,7 @@ pnpm dev:all
 pnpm sim
 ```
 
-Within a few seconds the dashboards come alive. The simulator includes one device that goes offline and one that drives a temperature spike, so you'll see both an `OFFLINE` device and a live `CRITICAL` alert.
+Within a few seconds the dashboards start filling in. The simulator includes one device that goes offline and one that drives a temperature spike, so you'll see both an `OFFLINE` device and a live `CRITICAL` alert.
 
 > **Note:** TimescaleDB is published on host port **5433** (not the default 5432) to avoid colliding with a local PostgreSQL, and services connect over `127.0.0.1`. Both are already set in `.env.example`.
 
@@ -292,9 +292,9 @@ Prometheus scrapes all four services; Grafana ships two provisioned dashboards (
 
 ## Scope
 
-**In scope:** device ingestion, time-series storage, declarative alerting, a read API, full observability, and a device simulator — all running locally.
+**In scope:** device ingestion, time-series storage, declarative alerting, a read API, observability, and a device simulator.
 
-**Intentionally out of scope:** real device firmware, authentication / multi-tenancy, real SMS or email delivery (a webhook mock stands in), horizontal scaling and Kubernetes, and any cloud deployment. The platform is a backend systems showcase, deliberately kept **free and fully local**.
+**Intentionally out of scope:** real device firmware, authentication / multi-tenancy, real SMS or email delivery (a webhook mock stands in), horizontal scaling and Kubernetes, and any cloud deployment. Everything runs locally via Docker Compose.
 
 ## License
 
